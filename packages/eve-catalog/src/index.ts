@@ -214,10 +214,10 @@ export const INTEGRATIONS: readonly IntegrationEntry[] = [
     surfaces: { scaffoldable: false, registry: true, gallery: true },
   },
   {
-    slug: "chat-sdk-linq",
+    slug: "linq",
     name: "Linq",
     kind: "channel",
-    tagline: "iMessage and SMS conversations, media, and tapbacks through Linq.",
+    tagline: "iMessage and SMS conversations through Linq, with guided Connect or portable setup.",
     surfaces: { scaffoldable: false, registry: true, gallery: true },
   },
   {
@@ -398,6 +398,17 @@ export const INTEGRATIONS: readonly IntegrationEntry[] = [
     connection: {
       description: "Honeycomb: explore traces, run queries, and inspect datasets.",
       mcp: { url: "https://mcp.honeycomb.io/mcp" },
+    },
+  },
+  {
+    slug: "agentcard",
+    name: "Agentcard",
+    kind: "connection",
+    tagline: "Shop at real merchants with consent-gated single-use virtual cards.",
+    surfaces: { scaffoldable: false, registry: true, gallery: true },
+    connection: {
+      description: "Agentcard tools and data",
+      mcp: { url: "https://mcp.agentcard.sh/mcp" },
     },
   },
   {

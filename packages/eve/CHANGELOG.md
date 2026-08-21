@@ -1,5 +1,61 @@
 # eve
 
+## 0.43.0
+
+### Minor Changes
+
+- 1390675: Background tools can now report a delegated task's terminal result in-process via `task.send({ kind: "complete" | "fail" | "cancel", ... })`, without minting a callback URL.
+
+### Patch Changes
+
+- 1c2684a: Add the native Agentcard MCP connection to the registry through Vercel Connect.
+- f3f4f4a: Allow in-process background tool executors to report progress and terminal results through `task.send`. Progress updates now use executor-neutral coordinates internally, and background task types are exported from `eve/tools`.
+- 7de783e: Existing Linq account setup now fetches the phone numbers assigned to the partner API token, then lets you select the numbers for your agent.
+- 3ec0e5b: Route model-facing session history through one prepared view so dynamic resolvers, compaction, instrumentation, and model calls receive a consistent conversation without changing durable history.
+- b57c965: Forward the active caller on persistent local and remote subagent continuations so user-scoped connections resolve for the current turn without inheriting the previous caller's authority. Upgrade both remote-agent deployments before resuming existing persistent sessions; create-only receivers reject forwarded continuations rather than falling back to service authority.
+- 3811d81: Update the project scripts after `eve add channel/web` so `pnpm dev` starts the generated Next.js app.
+- be9be27: Make dynamic tool approval, execution, and output callbacks durable across cold starts. Non-serializable callback captures now fail with an actionable error instead of losing values during replay.
+- 1390675: Add generic background `defineTool` execution so authored tools can return `task.delegated()` receipts and run through the durable task lifecycle without subagent-specific harness branches.
+- 99de091: Run local and remote subagents through generic background `defineTool` execution when `experimental.tasks` is enabled, preserving durable task receipts, HITL, cancellation, and child stream events.
+- f3f4f4a: Give the parent model runtime-authored task state on background wakes so related intermediate results can stay silent and settle into one consolidated report.
+- 3811d81: New npm, Yarn, and Bun agents no longer receive an obsolete AI SDK package-manager pin. Web Chat installation now preserves the AI SDK version already declared by the agent, avoiding npm `EOVERRIDE` failures.
+
+## 0.42.0
+
+### Minor Changes
+
+- a43e14f: Prevent channel HITL responses from carrying channel-local metadata into strict session-inbox payloads. Channel and session `respond()` calls now accept exact response literals or values proven by `parseInputResponses()`, rejecting imprecise `InputResponse[]` values that could have erased extra keys.
+
+### Patch Changes
+
+- f2169fa: Remove the `task_sleep` framework tool. Task-mode parents now rely on lifecycle notifications instead of model-paced waits.
+
+## 0.41.0
+
+### Minor Changes
+
+- 0569638: Add a first-class Linq iMessage and SMS channel with managed Vercel Connect and portable credential setup paths. Connect setup can provision a new Linq account and line or connect an existing account with its partner API token.
+
+### Patch Changes
+
+- bdf5f63: Improve the generated web chat experience with immediate thinking feedback, a disabled composer while responses stream, clearer cancellation controls, and visible turn failures.
+- c47350f: Rebuild untransformed session-scoped dynamic tool executors and approval policies on durable continuations so dependency-created tools remain available after replay.
+- c47350f: Update Teams tool-approval cards only after approval settlement, with the outcome and the Teams responder who acted.
+- 9e19fa4: Keep active client streams attached across authorization parking boundaries so connection callbacks resume browser chats automatically.
+
+## 0.40.0
+
+### Minor Changes
+
+- 2838bb3: Remove `task_peek` from experimental background tasks and include completed results and failures directly in task notifications. Conditionally delivered task wakes can remain silent when that result was already covered by an earlier response.
+
+### Patch Changes
+
+- e843b4d: Registry browsing now uses titles returned by the catalog, avoiding a separate request for every displayed item.
+- 899e079: Keep `eve info --json` output valid JSON by omitting the CLI banner.
+- cda9539: Redact brokered credential transforms when sandbox network policies are written to bootstrap logs.
+- 87c61a1: Update eve's bundled Workflow SDK packages to the latest 5.0.0 beta releases, picking up a replay-determinism fix for branch wake order under concurrent replays.
+
 ## 0.39.3
 
 ### Patch Changes

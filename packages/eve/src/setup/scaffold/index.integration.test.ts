@@ -242,8 +242,9 @@ describe("ensureChannel", () => {
       join(projectRoot, "app/_components/agent-chat.tsx"),
       "utf8",
     );
-    expect(agentChatSource).toContain("rounded-full transition-colors");
-    expect(agentChatSource).not.toContain("rounded - full transition - colors");
+    expect(agentChatSource).toContain("<PromptInputTextarea disabled={isBusy}");
+    expect(agentChatSource).toContain("{showPendingThinking ? <PendingThinking /> : null}");
+    expect(agentChatSource).not.toContain("StatusDot");
     await expect(readFile(join(projectRoot, "next.config.ts"), "utf8")).resolves.toContain(
       "withEve",
     );
@@ -433,6 +434,37 @@ describe("ensureChannel", () => {
     // CRLF (no repo .gitattributes), so compare line content, not line endings.
     const normalizeEol = (text: string): string => text.replaceAll("\r\n", "\n");
     expect(normalizeEol(channelSource)).toBe(normalizeEol(sourceChannel));
+  });
+
+  test("scaffolds Web Chat questions as visible response forms", async () => {
+    const projectRoot = await createTempDir();
+    await mkdir(join(projectRoot, "agent"), { recursive: true });
+    await writeFile(
+      join(projectRoot, "package.json"),
+      `${JSON.stringify({ name: "demo", type: "module" }, null, 2)}\n`,
+      "utf8",
+    );
+
+    await ensureChannel({
+      projectRoot,
+      kind: "web",
+      webPackageVersions: TEST_WEB_PACKAGE_VERSIONS,
+    });
+
+    const agentMessageSource = await readFile(
+      join(projectRoot, "app/_components/agent-message.tsx"),
+      "utf8",
+    );
+    const questionSource = await readFile(
+      join(projectRoot, "components/ai-elements/question.tsx"),
+      "utf8",
+    );
+    expect(agentMessageSource).toContain('inputRequest?.kind === "question"');
+    expect(agentMessageSource).toContain("<QuestionRequest");
+    expect(agentMessageSource).toContain("onInputResponses");
+    expect(questionSource).toContain("export const Question");
+    expect(questionSource).toContain("export const QuestionInput");
+    expect(questionSource).toContain("export const QuestionOption");
   });
 
   test("scaffolds a Web Chat Stop button with the agent cancellation API", async () => {
@@ -711,6 +743,53 @@ describe("ensureChannel", () => {
       filesWritten: [],
       filesSkipped: [packageJsonPath],
       packageJsonUpdated: [],
+    });
+  });
+
+  test("finishes package setup after the registry installs Web Chat", async () => {
+    const projectRoot = await createTempDir();
+    const pagePath = join(projectRoot, "app/page.tsx");
+    const packageJsonPath = join(projectRoot, "package.json");
+    await mkdir(join(projectRoot, "app"), { recursive: true });
+    await writeFile(pagePath, "registry-installed\n", "utf8");
+    await writeFile(
+      packageJsonPath,
+      `${JSON.stringify(
+        {
+          name: "demo",
+          type: "module",
+          scripts: { test: "vitest" },
+          dependencies: { next: "16.3.0-preview.6" },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = await ensureChannel({
+      projectRoot,
+      kind: "web",
+      configureVercelServices: false,
+      skipDependencyMutation: true,
+      webPackageVersions: TEST_WEB_PACKAGE_VERSIONS,
+    });
+
+    expect(result.action).toBe("overwritten");
+    await expect(readFile(pagePath, "utf8")).resolves.toBe("registry-installed\n");
+    const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8")) as {
+      dependencies: Record<string, string>;
+      scripts: Record<string, string>;
+    };
+    expect(packageJson.dependencies).toEqual({ next: "16.3.0-preview.6" });
+    expect(packageJson).toMatchObject({
+      scripts: {
+        build: "next build",
+        "build:eve": "eve build",
+        dev: "next dev",
+        start: "next start",
+        test: "vitest",
+      },
     });
   });
 });
@@ -1015,14 +1094,9 @@ describe("scaffoldBaseProject", () => {
     }
   });
 
-  test.each([
-    ["pnpm", undefined],
-    ["npm", "overrides"],
-    ["yarn", "resolutions"],
-    ["bun", "overrides"],
-  ] as const)(
-    "scaffolds a standalone %s project with its own package-manager metadata",
-    async (packageManager, aiPinField) => {
+  test.each(["pnpm", "npm", "yarn", "bun"] as const)(
+    "scaffolds a standalone %s project without an AI package-manager pin",
+    async (packageManager) => {
       const targetDirectory = await createTempDir();
       const projectRoot = await scaffoldBaseProject({
         projectName: "demo-agent",
@@ -1044,15 +1118,8 @@ describe("scaffoldBaseProject", () => {
       const packageJson: unknown = JSON.parse(
         await readFile(join(projectRoot, "package.json"), "utf8"),
       );
-      if (aiPinField === undefined) {
-        expect(packageJson).not.toHaveProperty("overrides");
-        expect(packageJson).not.toHaveProperty("resolutions");
-      } else {
-        expect(packageJson).toHaveProperty(`${aiPinField}.ai`, "7.0.0");
-        expect(packageJson).not.toHaveProperty(
-          aiPinField === "overrides" ? "resolutions" : "overrides",
-        );
-      }
+      expect(packageJson).not.toHaveProperty("overrides");
+      expect(packageJson).not.toHaveProperty("resolutions");
     },
   );
 
@@ -1140,13 +1207,9 @@ describe("scaffoldBaseProject", () => {
     });
   });
 
-  test.each([
-    ["npm", "overrides"],
-    ["bun", "overrides"],
-    ["yarn", "resolutions"],
-  ] as const)(
+  test.each(["npm", "bun", "yarn"] as const)(
     "scaffolds a %s workspace member with root-only package fields at the workspace root",
-    async (packageManager, rootAiPinField) => {
+    async (packageManager) => {
       const workspaceRoot = await createTempDir();
       const targetDirectory = join(workspaceRoot, "apps");
       await mkdir(targetDirectory, { recursive: true });
@@ -1190,21 +1253,18 @@ describe("scaffoldBaseProject", () => {
         await readFile(join(workspaceRoot, "package.json"), "utf8"),
       ) as {
         engines?: { node?: string };
-        overrides?: { ai?: string };
-        resolutions?: { ai?: string };
+        overrides?: unknown;
+        resolutions?: unknown;
       };
       expect(rootPackageJson.engines?.node).toBe("24.x");
-      expect(rootPackageJson[rootAiPinField]?.ai).toBe("7.0.0");
+      expect(rootPackageJson.overrides).toBeUndefined();
+      expect(rootPackageJson.resolutions).toBeUndefined();
     },
   );
 
-  test.each([
-    ["npm", "overrides"],
-    ["bun", "overrides"],
-    ["yarn", "resolutions"],
-  ] as const)(
+  test.each(["npm", "bun", "yarn"] as const)(
     "scaffolds under an unclaimed %s workspace directory by adding a package pattern",
-    async (packageManager, rootAiPinField) => {
+    async (packageManager) => {
       const workspaceRoot = await createTempDir();
       const targetDirectory = join(workspaceRoot, "agents");
       await mkdir(targetDirectory, { recursive: true });
@@ -1248,13 +1308,14 @@ describe("scaffoldBaseProject", () => {
         await readFile(join(workspaceRoot, "package.json"), "utf8"),
       ) as {
         engines?: { node?: string };
-        overrides?: { ai?: string };
-        resolutions?: { ai?: string };
+        overrides?: unknown;
+        resolutions?: unknown;
         workspaces?: string[];
       };
       expect(rootPackageJson.workspaces).toEqual(["apps/*", "agents/*"]);
       expect(rootPackageJson.engines?.node).toBe("24.x");
-      expect(rootPackageJson[rootAiPinField]?.ai).toBe("7.0.0");
+      expect(rootPackageJson.overrides).toBeUndefined();
+      expect(rootPackageJson.resolutions).toBeUndefined();
     },
   );
 

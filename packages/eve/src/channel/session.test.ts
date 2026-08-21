@@ -1,9 +1,35 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { buildSessionHandle, createAttachSessionFn, createSession } from "#channel/session.js";
+import {
+  buildSessionHandle,
+  createAttachSessionFn,
+  createSession,
+  type Session,
+} from "#channel/session.js";
 import type { Runtime } from "#channel/types.js";
 import { ContextContainer } from "#context/container.js";
 import { AuthKey, ContinuationTokenKey, InitiatorAuthKey, SessionIdKey } from "#context/keys.js";
+import { type InputResponse, parseInputResponses } from "#runtime/input/types.js";
+
+function fixedSessionRespondTypeChecks(session: Session): void {
+  const responsesWithMetadata = [
+    { kind: "tool-approval", optionId: "approve", requestId: "approval-1" },
+  ] as const;
+
+  // @ts-expect-error fixed sessions enforce the same exact input-response contract.
+  void session.respond(responsesWithMetadata, { auth: null });
+
+  const widenedResponses: readonly InputResponse[] = responsesWithMetadata;
+  // @ts-expect-error widened responses must be schema-validated before delivery.
+  void session.respond(widenedResponses, { auth: null });
+
+  const validatedResponses = parseInputResponses([
+    { optionId: "approve", requestId: "approval-1" },
+  ]);
+  void session.respond(validatedResponses, { auth: null });
+}
+
+void fixedSessionRespondTypeChecks;
 
 function createRuntime(): Runtime {
   return {
