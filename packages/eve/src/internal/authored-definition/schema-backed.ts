@@ -9,6 +9,7 @@ import { isObject } from "#shared/guards.js";
 import type { JsonObject } from "#shared/json.js";
 import { isDisabledToolSentinel } from "#tools/definition.js";
 import { isWebSearchToolDefinition } from "#tools/provided/web-search.js";
+import { isWebFetchProviderDefinition } from "#tools/provided/web-fetch-provider.js";
 import {
   expectBoolean,
   expectFunction,
@@ -78,6 +79,7 @@ type NormalizedToolEntry =
   | { readonly kind: "tool"; readonly definition: NormalizedAuthoredTool }
   | { readonly kind: "disabled" }
   | { readonly kind: "web-search-tool"; readonly provider: "exa" | "parallel" }
+  | { readonly kind: "web-fetch-tool"; readonly provider: "browserbase" }
   | {
       readonly kind: "dynamic-tool";
       readonly eventNames: readonly DynamicToolEventName[];
@@ -111,6 +113,14 @@ export function normalizeToolDefinition(value: unknown, message: string): Normal
       throw new Error(`${message} Expected "provider" to be one of: exa, parallel.`);
     }
     return { kind: "web-search-tool", provider };
+  }
+  if (isWebFetchProviderDefinition(value)) {
+    const record = expectObjectRecord(value, message);
+    expectOnlyKnownKeys(record, ["kind", "provider"], message);
+    if (record.provider !== "browserbase") {
+      throw new Error(`${message} Expected "provider" to be browserbase.`);
+    }
+    return { kind: "web-fetch-tool", provider: record.provider };
   }
 
   const record = expectObjectRecord(value, message);

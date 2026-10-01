@@ -837,6 +837,12 @@ const compiledToolBehaviorSchema: z.ZodType<CompiledToolBehavior> = z
           .strict(),
         z
           .object({
+            kind: z.literal("provider-fetch-tool"),
+            provider: z.literal("browserbase"),
+          })
+          .strict(),
+        z
+          .object({
             entryPoint: z.enum(["execute", "task", "serve"]),
             kind: z.literal("workflow-tool"),
             workflowId: z.string(),

@@ -31,6 +31,7 @@ import { defineTool, disableTool } from "#tools/definition.js";
 import { defineMemory } from "#public/memory/index.js";
 import { defineDynamic } from "#dynamic/definition.js";
 import { webSearch } from "#tools/provided/web-search.js";
+import { webFetchProvider } from "#tools/provided/web-fetch-provider.js";
 import { agent as agentTool } from "#tools/framework/agent.js";
 
 function manifest() {
@@ -336,6 +337,10 @@ describe("compileAgentManifest source graph", () => {
         logicalPath: "tools/web_search.ts",
         loadNamespace: async () => ({ default: webSearch({ provider: "parallel" }) }),
       },
+      {
+        logicalPath: "tools/web_fetch.ts",
+        loadNamespace: async () => ({ default: webFetchProvider({ provider: "browserbase" }) }),
+      },
     ]);
     const compiled = await compileAgentManifest(manifest(), {
       sourceRegistries: [sourceRegistry],
@@ -368,6 +373,24 @@ describe("compileAgentManifest source graph", () => {
         handling: { kind: "provider-tool", provider: "parallel" },
       },
     });
+    expect(graph.root.turnAgent.tools.find((tool) => tool.name === "web_fetch")).toMatchObject({
+      behavior: {
+        handling: { kind: "provider-fetch-tool", provider: "browserbase" },
+      },
+    });
+    expect(serialized.tools.find((tool) => tool.name === "web_fetch")?.hasExecute).toBe(false);
+  });
+
+  it("rejects a provider fetch definition under a different tool name", async () => {
+    const sourceRegistry = registry([
+      {
+        logicalPath: "tools/fetch_page.ts",
+        loadNamespace: async () => ({ default: webFetchProvider({ provider: "browserbase" }) }),
+      },
+    ]);
+    await expect(
+      compileAgentManifest(manifest(), { sourceRegistries: [sourceRegistry] }),
+    ).rejects.toThrow('webFetchProvider() definition must be exported from "tools/web_fetch.ts"');
   });
 
   it("loads the selected config before any non-config definition", async () => {

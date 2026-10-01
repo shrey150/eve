@@ -161,3 +161,11 @@ function attachWebSearchOutputSchema(
     outputSchema: jsonSchema(resolveWebSearchOutputSchema(backend) as JSONSchema7),
   } as ToolSet[string];
 }
+
+export async function resolveWebFetchProviderTool(
+  modelRef: RuntimeModelReference,
+): Promise<ToolSet[string] | null> {
+  if (modelRef.source !== undefined) return null;
+  const { gateway } = await import("ai");
+  return gateway.tools.browserbaseFetch({ format: "markdown" });
+}

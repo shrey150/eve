@@ -7,6 +7,7 @@ import { defineTool, disableTool } from "#tools/definition.js";
 import { once } from "#tools/approval/policies.js";
 import { webSearch } from "#tools/provided/web-search.js";
 import { defineWorkflowTool } from "#tools/workflow-definition.js";
+import { webFetchProvider } from "#tools/provided/web-fetch-provider.js";
 import { normalizeToolDefinition } from "#internal/authored-definition/schema-backed.js";
 
 const FAILURE_MESSAGE = "Expected the tool export to match the public eve shape.";
@@ -120,6 +121,27 @@ describe("normalizeToolDefinition", () => {
       kind: "web-search-tool",
       provider: "exa",
     });
+  });
+
+  it("normalizes Browserbase fetch and rejects unknown provider configuration", () => {
+    expect(
+      normalizeToolDefinition(webFetchProvider({ provider: "browserbase" }), FAILURE_MESSAGE),
+    ).toEqual({
+      kind: "web-fetch-tool",
+      provider: "browserbase",
+    });
+    expect(() =>
+      normalizeToolDefinition(
+        { kind: "eve:web-fetch-provider", provider: "other" },
+        FAILURE_MESSAGE,
+      ),
+    ).toThrow('Expected "provider" to be browserbase');
+    expect(() =>
+      normalizeToolDefinition(
+        { kind: "eve:web-fetch-provider", provider: "browserbase", apiKey: "unsupported" },
+        FAILURE_MESSAGE,
+      ),
+    ).toThrow();
   });
 
   it("rejects an unsupported web search provider", () => {

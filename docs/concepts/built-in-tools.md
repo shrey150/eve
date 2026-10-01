@@ -134,7 +134,7 @@ export default disableTool();
 
 ### `web_fetch`
 
-`web_fetch` fetches URLs from the app runtime. It follows up to ten redirects and checks every destination for SSRF safety. Non-success responses return plain text with the response body when available.
+By default, `web_fetch` fetches URLs from the app runtime. It follows up to ten redirects and checks every destination for SSRF safety. Non-success responses return plain text with the response body when available. Its formats are `markdown` (default), `text`, and `html`.
 
 ```sh
 eve add tool/web_fetch
@@ -143,6 +143,18 @@ eve add tool/web_fetch
 ```ts title="agent/tools/web_fetch.ts"
 export { default } from "eve/tools/web_fetch";
 ```
+
+To use Browserbase Fetch through AI Gateway, replace the default with `webFetchProvider`:
+
+```ts title="agent/tools/web_fetch.ts"
+import { webFetchProvider } from "eve/tools/web_fetch";
+
+export default webFetchProvider({ provider: "browserbase" });
+```
+
+This configuration requires an AI Gateway model string, such as `model: "openai/gpt-5.4"` in `agent/agent.ts`. AI Gateway executes the fetch using the same `AI_GATEWAY_API_KEY` or Vercel project OIDC credentials as the model; no `BROWSERBASE_API_KEY` is needed. With a direct provider model, eve omits this provider-managed `web_fetch` from the model's tools. Keep the default export or the named `webFetch` definition to fetch from the app runtime with any model.
+
+`webFetchProvider` accepts only the provider selector. The model supplies the URL, and fetched pages are returned as Markdown to keep page content concise. Browserbase's Gateway helper supplies this tool's input and output schemas; the local `webFetch` definition keeps its existing schema. See [Browserbase Fetch on AI Gateway](https://vercel.com/docs/ai-gateway/models-and-providers/web-search#using-browserbase-fetch) for service behavior and pricing.
 
 Override it:
 
