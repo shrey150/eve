@@ -835,12 +835,23 @@ const compiledToolBehaviorSchema: z.ZodType<CompiledToolBehavior> = z
             provider: z.enum(["exa", "parallel"]),
           })
           .strict(),
-        z
-          .object({
-            kind: z.literal("provider-fetch-tool"),
-            provider: z.literal("browserbase"),
-          })
-          .strict(),
+        z.discriminatedUnion("format", [
+          z
+            .object({
+              kind: z.literal("provider-fetch-tool"),
+              provider: z.literal("browserbase"),
+              format: z.enum(["markdown", "raw"]).optional(),
+            })
+            .strict(),
+          z
+            .object({
+              kind: z.literal("provider-fetch-tool"),
+              provider: z.literal("browserbase"),
+              format: z.literal("json"),
+              schema: jsonObjectSchema,
+            })
+            .strict(),
+        ]),
         z
           .object({
             entryPoint: z.enum(["execute", "task", "serve"]),

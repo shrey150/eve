@@ -1,3 +1,4 @@
+import type { WebFetchProviderInput } from "#tools/provided/web-fetch-provider.js";
 import type { WebSearchProvider } from "#shared/web-search.js";
 import type { WorkflowToolEntryPoint } from "#tools/workflow-entry-point.js";
 
@@ -8,7 +9,7 @@ export type ToolAvailabilityCondition = "root-session";
 export type CompiledToolHandling =
   | { readonly kind: "dispatch"; readonly action: "self-agent" }
   | { readonly kind: "provider-tool"; readonly provider: WebSearchProvider }
-  | { readonly kind: "provider-fetch-tool"; readonly provider: "browserbase" }
+  | ({ readonly kind: "provider-fetch-tool" } & WebFetchProviderInput)
   | {
       readonly kind: "workflow-tool";
       readonly entryPoint: WorkflowToolEntryPoint;

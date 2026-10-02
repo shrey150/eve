@@ -4,13 +4,13 @@ const TARGET_URL = "https://example.com/";
 
 export default defineEval({
   tags: ["real-model"],
-  description: "Browserbase Gateway fetch returns a public page for the agent to read.",
+  description: "Browserbase Gateway fetch extracts a public page using the authored JSON schema.",
   async test(t) {
     const turn = await t.send(
       [
-        "Bob is checking the public example page used in an onboarding guide.",
+        "Bob is adding a summary of the public example page to an onboarding guide.",
         `Use web_fetch once with URL ${JSON.stringify(TARGET_URL)}.`,
-        "Explain the page's purpose in one sentence.",
+        "Report the page's title and purpose using the returned structured fields.",
       ].join("\n"),
     );
 
@@ -28,16 +28,23 @@ export default defineEval({
         ) {
           return false;
         }
+        const content = value.content;
         return (
           value.statusCode === 200 &&
-          typeof value.content === "string" &&
-          value.content.includes("documentation") &&
           typeof value.contentType === "string" &&
-          value.contentType.includes("markdown")
+          value.contentType.includes("json") &&
+          typeof content === "object" &&
+          content !== null &&
+          "title" in content &&
+          typeof content.title === "string" &&
+          /^example domains?$/i.test(content.title) &&
+          "purpose" in content &&
+          typeof content.purpose === "string" &&
+          content.purpose.toLowerCase().includes("documentation")
         );
       },
     });
     turn.noFailedActions();
-    turn.messageIncludes("documentation");
+    turn.messageIncludes("Example Domain");
   },
 });

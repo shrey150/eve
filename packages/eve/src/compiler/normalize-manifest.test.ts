@@ -339,7 +339,17 @@ describe("compileAgentManifest source graph", () => {
       },
       {
         logicalPath: "tools/web_fetch.ts",
-        loadNamespace: async () => ({ default: webFetchProvider({ provider: "browserbase" }) }),
+        loadNamespace: async () => ({
+          default: webFetchProvider({
+            provider: "browserbase",
+            format: "json",
+            schema: {
+              type: "object",
+              properties: { title: { type: "string" } },
+              required: ["title"],
+            },
+          }),
+        }),
       },
     ]);
     const compiled = await compileAgentManifest(manifest(), {
@@ -375,7 +385,16 @@ describe("compileAgentManifest source graph", () => {
     });
     expect(graph.root.turnAgent.tools.find((tool) => tool.name === "web_fetch")).toMatchObject({
       behavior: {
-        handling: { kind: "provider-fetch-tool", provider: "browserbase" },
+        handling: {
+          kind: "provider-fetch-tool",
+          provider: "browserbase",
+          format: "json",
+          schema: {
+            type: "object",
+            properties: { title: { type: "string" } },
+            required: ["title"],
+          },
+        },
       },
     });
     expect(serialized.tools.find((tool) => tool.name === "web_fetch")?.hasExecute).toBe(false);

@@ -144,6 +144,23 @@ describe("normalizeToolDefinition", () => {
     ).toThrow();
   });
 
+  it.each([
+    [{ format: "json" }, 'requires a "schema"'],
+    [{ schema: {} }, 'only valid with "format": "json"'],
+    [{ format: "raw", schema: {} }, 'only valid with "format": "json"'],
+    [{ format: "markdown", schema: {} }, 'only valid with "format": "json"'],
+    [{ format: "text" }, 'Expected "format"'],
+    [{ format: "json", schema: [] }, "JSON-serializable object"],
+    [{ format: "json", schema: { value: () => null } }, "JSON"],
+  ])("rejects invalid fetch configuration %j", (config, error) => {
+    expect(() =>
+      normalizeToolDefinition(
+        { kind: "eve:web-fetch-provider", provider: "browserbase", ...config },
+        FAILURE_MESSAGE,
+      ),
+    ).toThrow(error);
+  });
+
   it("rejects an unsupported web search provider", () => {
     expect(() =>
       normalizeToolDefinition({ kind: "eve:web-search-tool", provider: "other" }, FAILURE_MESSAGE),

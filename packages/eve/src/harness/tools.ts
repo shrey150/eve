@@ -249,7 +249,7 @@ export async function buildToolSetWithProviderTools(input: {
       definition.execute === undefined &&
       !disabled?.has(definition.name)
     ) {
-      const providerTool = await resolveWebFetchProviderTool(input.modelReference);
+      const providerTool = await resolveWebFetchProviderTool(input.modelReference, handling);
       if (providerTool === null) delete tools[definition.name];
       else tools[definition.name] = providerTool;
     }

@@ -1,3 +1,4 @@
+import type { WebFetchProviderInput } from "#tools/provided/web-fetch-provider.js";
 import { jsonSchema, type JSONSchema7, type ToolSet } from "ai";
 
 import type { RuntimeModelReference } from "#runtime/agent/bootstrap.js";
@@ -164,8 +165,12 @@ function attachWebSearchOutputSchema(
 
 export async function resolveWebFetchProviderTool(
   modelRef: RuntimeModelReference,
+  config: WebFetchProviderInput,
 ): Promise<ToolSet[string] | null> {
   if (modelRef.source !== undefined) return null;
   const { gateway } = await import("ai");
-  return gateway.tools.browserbaseFetch({ format: "markdown" });
+  return gateway.tools.browserbaseFetch({
+    format: config.format ?? "markdown",
+    schema: config.schema,
+  });
 }

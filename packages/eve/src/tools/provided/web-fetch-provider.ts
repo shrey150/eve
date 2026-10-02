@@ -1,19 +1,21 @@
 /** Web fetch providers available through Vercel AI Gateway. */
 export type WebFetchProvider = "browserbase";
 
-export interface WebFetchProviderInput {
-  readonly provider: WebFetchProvider;
-}
+/** JSON extraction requires a developer-authored JSON Schema. */
+export type WebFetchProviderInput = { readonly provider: WebFetchProvider } & (
+  | { readonly format?: "markdown" | "raw"; readonly schema?: never }
+  | { readonly format: "json"; readonly schema: Readonly<Record<string, unknown>> }
+);
 
 /** Provider-managed fetch configuration for `agent/tools/web_fetch.ts`. */
-export interface WebFetchProviderDefinition {
+export type WebFetchProviderDefinition = WebFetchProviderInput & {
   readonly kind: "eve:web-fetch-provider";
-  readonly provider: WebFetchProvider;
-}
+};
 
 /**
  * Replaces local web fetch with a provider-managed tool for AI Gateway models.
- * Fetches page content as Markdown. Requires AI Gateway authentication;
+ * Defaults to Markdown; use `format: "json"` with `schema` for structured extraction
+ * or `format: "raw"` for the upstream body. Requires AI Gateway authentication;
  * direct provider models omit this tool.
  *
  * @example
@@ -24,7 +26,7 @@ export interface WebFetchProviderDefinition {
  * ```
  */
 export function webFetchProvider(input: WebFetchProviderInput): WebFetchProviderDefinition {
-  return { kind: "eve:web-fetch-provider", provider: input.provider };
+  return { ...input, kind: "eve:web-fetch-provider" };
 }
 
 export function isWebFetchProviderDefinition(value: unknown): value is WebFetchProviderDefinition {

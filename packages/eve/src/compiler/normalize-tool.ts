@@ -80,11 +80,11 @@ export async function compileToolEntry(
           handling:
             entry.kind === "web-search-tool"
               ? { kind: "provider-tool", provider: entry.provider }
-              : { kind: "provider-fetch-tool", provider: entry.provider },
+              : { ...entry, kind: "provider-fetch-tool" },
         },
         description: isSearch
           ? "Search the web for real-time information. Use this to find up-to-date information about current events, recent developments, or topics that may have changed since the knowledge cutoff."
-          : "Fetch a webpage through Browserbase and return its content as Markdown.",
+          : "Fetch a webpage through Browserbase using the configured output format.",
         exportName: source.exportName,
         hasExecute: false,
         hasModelOutputProjection: false,
