@@ -37,6 +37,30 @@ function moduleMap(value: unknown): CompiledModuleMap {
 
 describe("resolveToolDefinition", () => {
   it.each([
+    {
+      name: "provider fetch",
+      behavior: {
+        availability: [],
+        handling: { kind: "provider-fetch-tool", provider: "browserbase" },
+      } satisfies CompiledToolDefinition["behavior"],
+      framework: true,
+    },
+    { name: "custom", behavior: undefined, framework: false },
+  ])(
+    "preserves framework branding for a $name tool without an executor",
+    async ({ behavior, framework }) => {
+      const resolved = await resolveToolDefinition(
+        { ...definition, hasExecute: false, behavior },
+        { nodes: {} },
+        undefined,
+        { kind: "application" },
+      );
+
+      expect(isFrameworkTool(resolved)).toBe(framework);
+    },
+  );
+
+  it.each([
     { tool: sleep(), action: "sleep", workflow: true },
     { tool: noReply(), action: "no_reply", workflow: false },
   ])(

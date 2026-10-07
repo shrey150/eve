@@ -39,7 +39,8 @@ export async function resolveToolDefinition(
       sourceId: definition.sourceId,
       sourceKind: "module",
     };
-    return definition.behavior?.handling?.kind === "provider-tool"
+    const handling = definition.behavior?.handling?.kind;
+    return handling === "provider-tool" || handling === "provider-fetch-tool"
       ? frameworkTool(resolved)
       : resolved;
   }

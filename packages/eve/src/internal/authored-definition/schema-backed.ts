@@ -6,10 +6,14 @@ import {
 import { readWorkflowFunctionId } from "#internal/workflow/reference.js";
 import { TASK_ID_INPUT, withTaskIdSchema } from "#execution/tasks/task-id-input.js";
 import { isObject } from "#shared/guards.js";
-import type { JsonObject } from "#shared/json.js";
+import { parseJsonObject, type JsonObject } from "#shared/json.js";
 import { isDisabledToolSentinel } from "#tools/definition.js";
 import { isWebSearchToolDefinition } from "#tools/provided/web-search.js";
 import type { WebSearchProvider } from "#shared/web-search.js";
+import {
+  isWebFetchProviderDefinition,
+  type WebFetchProviderInput,
+} from "#tools/provided/web-fetch-provider.js";
 import {
   expectBoolean,
   expectFunction,
@@ -79,6 +83,7 @@ type NormalizedToolEntry =
   | { readonly kind: "tool"; readonly definition: NormalizedAuthoredTool }
   | { readonly kind: "disabled" }
   | { readonly kind: "web-search-tool"; readonly provider: WebSearchProvider }
+  | ({ readonly kind: "web-fetch-tool" } & WebFetchProviderInput)
   | {
       readonly kind: "dynamic-tool";
       readonly eventNames: readonly DynamicToolEventName[];
@@ -112,6 +117,36 @@ export function normalizeToolDefinition(value: unknown, message: string): Normal
       throw new Error(`${message} Expected "provider" to be one of: exa, parallel, browserbase.`);
     }
     return { kind: "web-search-tool", provider };
+  }
+  if (isWebFetchProviderDefinition(value)) {
+    const record = expectObjectRecord(value, message);
+    expectOnlyKnownKeys(record, ["kind", "provider", "format", "schema"], message);
+    if (record.provider !== "browserbase") {
+      throw new Error(`${message} Expected "provider" to be browserbase.`);
+    }
+    const format = record.format;
+    if (format === "json") {
+      if (record.schema === undefined) {
+        throw new Error(`${message} JSON fetch requires a "schema".`);
+      }
+      return {
+        kind: "web-fetch-tool",
+        provider: record.provider,
+        format,
+        schema: parseJsonObject(record.schema),
+      };
+    }
+    if (format !== undefined && format !== "markdown" && format !== "raw") {
+      throw new Error(`${message} Expected "format" to be one of: markdown, raw, json.`);
+    }
+    if (record.schema !== undefined) {
+      throw new Error(`${message} "schema" is only valid with "format": "json".`);
+    }
+    return {
+      kind: "web-fetch-tool",
+      provider: record.provider,
+      format,
+    };
   }
 
   const record = expectObjectRecord(value, message);

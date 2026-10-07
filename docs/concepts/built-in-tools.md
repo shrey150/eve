@@ -151,7 +151,7 @@ export default disableTool();
 
 ### `web_fetch`
 
-`web_fetch` fetches URLs from the app runtime. It follows up to ten redirects and checks every destination for SSRF safety. Non-success responses return plain text with the response body when available.
+By default, `web_fetch` fetches URLs directly from the server running your agent. It follows up to ten redirects and checks every destination for SSRF safety. Non-success responses return plain text with the response body when available.
 
 ```sh
 eve add tool/web_fetch
@@ -161,7 +161,38 @@ eve add tool/web_fetch
 export { default } from "eve/tools/web_fetch";
 ```
 
-Override it:
+To fetch through Browserbase on AI Gateway:
+
+```ts title="agent/tools/web_fetch.ts"
+import { webFetchProvider } from "eve/tools/web_fetch";
+
+export default webFetchProvider({ provider: "browserbase" });
+```
+
+Browserbase Fetch requires a [Gateway model ID](../agent-config#set-the-model) and uses the model's `AI_GATEWAY_API_KEY` or Vercel project OIDC credentials. No `BROWSERBASE_API_KEY` is needed. With a direct provider model, this tool is unavailable.
+
+Browserbase Fetch returns Markdown by default. `format: "raw"` returns the response body, and `format: "json"` with a JSON Schema extracts a structured object:
+
+```ts title="agent/tools/web_fetch.ts"
+import { webFetchProvider } from "eve/tools/web_fetch";
+
+export default webFetchProvider({
+  provider: "browserbase",
+  format: "json",
+  schema: {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      summary: { type: "string" },
+    },
+    required: ["title", "summary"],
+  },
+});
+```
+
+The model supplies the URL; the tool definition sets the output format. See [Browserbase Fetch on AI Gateway](https://vercel.com/docs/ai-gateway/models-and-providers/web-search#using-browserbase-fetch).
+
+Override the default fetch:
 
 ```ts title="agent/tools/web_fetch.ts"
 import { defineTool } from "eve/tools";
